@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SR.Investments</title>
+    <style>
+        :root {
+            --primary: #d81b60;
+            --bg: #0b0f19;
+            --card: #131b2e;
+            --text: #ffffff;
+            --muted: #94a3b8;
+            --border: #1e293b;
+            --success: #10b981;
+            --whatsapp: #25d366;
+            --telegram: #0088cc;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+        body { background: var(--bg); color: var(--text); padding-bottom: 75px; position: relative; min-height: 100vh; overflow-x: hidden; }
+        
+        #wave-canvas {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 45vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        header, .banner, .card, .modal, .nav, .floating-container, #auth-container { position: relative; z-index: 2; }
+
+        /* Auth Screen Styles */
+        #auth-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            background: var(--bg);
+            z-index: 1000;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+        }
+        .auth-card {
+            background: var(--card);
+            width: 100%;
+            max-width: 380px;
+            padding: 25px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+        }
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        .auth-tab {
+            flex: 1;
+            padding: 10px;
+            background: none;
+            border: none;
+            color: var(--muted);
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            text-align: center;
+        }
+        .auth-tab.active {
+            color: var(--primary);
+            border-bottom: 2px solid var(--primary);
+        }
+        .auth-form { display: none; }
+        .auth-form.active { display: block; }
+
+        header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: var(--card); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
+        .title { color: var(--primary); font-weight: bold; font-size: 16px; }
+        .banner { background: rgba(16,185,129,0.15); color: #34d399; padding: 10px 15px; font-size: 12px; }
+        .card { background: var(--card); margin: 15px; padding: 20px; border-radius: 12px; border: 1px solid var(--border); text-align: center; }
+        .balance { font-size: 24px; font-weight: bold; margin: 10px 0; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 15px; margin-bottom: 15px; }
+        .btn { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; box-shadow: 0 3px 6px rgba(216,27,96,0.3); }
+        .view { display: none; }
+        .view.active { display: block; }
+        .nav { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--card); display: flex; border-top: 1px solid var(--border); padding: 8px 0; z-index: 10; }
+        .nav-item { flex: 1; text-align: center; background: none; border: none; color: var(--muted); font-size: 9px; cursor: pointer; }
+        .nav-item.active { color: var(--primary); }
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 100; padding: 20px; }
+        .modal.active { display: flex; }
+        .modal-content { background: var(--card); width: 100%; max-width: 350px; padding: 20px; border-radius: 12px; border: 1px solid var(--border); max-height: 90vh; overflow-y: auto; }
+        .input, select.input { width: 100%; padding: 10px; background: #0d1424; border: 1px solid var(--border); color: white; border-radius: 6px; margin: 8px 0; font-size: 14px; }
+        
+        .plan-row { display: flex; justify-content: space-between; align-items: center; background: #0d1424; padding: 10px; margin-top: 8px; border-radius: 8px; border: 1px solid var(--border); text-align: left; }
+        .plan-info div:first-child { font-weight: bold; font-size: 13px; color: var(--text); }
+        .plan-info div:last-child { font-size: 11px; color: var(--muted); }
+
+        .profile-avatar-container {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 12px auto;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid var(--primary);
+            background: #0d1424;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .profile-avatar-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .floating-container {
+            position: fixed;
+            bottom: 85px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: flex-end;
+            z-index: 99;
+        }
+
+        .float-btn {
+            color: white;
+            border-radius: 30px;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: bold;
+            font-size: 13px;
+            text-decoration: none;
+            transition: transform 0.2s;
+        }
+        .float-btn:active { transform: scale(0.95); }
+
+        .whatsapp-float {
+            background-color: var(--whatsapp);
+            box-shadow: 0 4px 10px rgba(37, 211, 102, 0.4);
+        }
+
+        .telegram-float {
+            background-color: var(--telegram);
+            box-shadow: 0 4px 10px rgba(0, 136, 204, 0.4);
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="wave-canvas"></canvas>
+
+    <!-- AUTHENTICATION SCREEN -->
+    <div id="auth-container">
+        <div class="auth-card">
+            <div style="text-align:center; margin-bottom:15px;">
+                <h2 style="color:var(--primary); font-size:18px;">SR.INVESTMENTS</h2>
+                <p style="font-size:11px; color:var(--muted);">Secure Investment Portal</p>
+            </div>
+            <div class="auth-tabs">
+                <button class="auth-tab active" id="tab-reg-btn" onclick="switchAuthTab('register')">Register</button>
+                <button class="auth-tab" id="tab-log-btn" onclick="switchAuthTab('login')">Login</button>
+            </div>
+
+            <!-- REGISTER FORM -->
+            <div id="register-form" class="auth-form active">
+                <label style="font-size:11px; color:var(--muted);">Phone (07XXXXXXXX) or Email</label>
+                <input type="text" id="reg-user" class="input" placeholder="e.g. 0712345678">
+                
+                <label style="font-size:11px; color:var(--muted);">Password (Alphanumeric)</label>
+                <input type="password" id="reg-pass" class="input" placeholder="Enter password">
+                
+                <label style="font-size:11px; color:var(--muted);">Confirm Password</label>
+                <input type="password" id="reg-pass-confirm" class="input" placeholder="Confirm password">
+                
+                <label style="font-size:11px; color:var(--muted);">Invitation Code / Ref Link</label>
+                <input type="text" id="reg-ref" class="input" value="941295" placeholder="Referral code">
+
+                <button class="btn" style="width:100%; margin-top:10px;" onclick="handleRegister()">Create Account</button>
+            </div>
+
+            <!-- LOGIN FORM -->
+            <div id="login-form" class="auth-form">
+                <label style="font-size:11px; color:var(--muted);">Phone or Email</label>
+                <input type="text" id="log-user" class="input" placeholder="Registered Phone/Email">
+                
+                <label style="font-size:11px; color:var(--muted);">Password</label>
+                <input type="password" id="log-pass" class="input" placeholder="Your password">
+
+                <button class="btn" style="width:100%; margin-top:10px;" onclick="handleLogin()">Login to Account</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP INTERFACE -->
+    <div id="main-app" style="display:none;">
+        <header>
+            <span class="title">SR.INVESTMENTS</span>
+            <span>🔔</span>
+        </header>
+
+        <div class="banner">Welcome! You received UGX 3,000 welcome bonus.</div>
+
+        <!-- HOME VIEW -->
+        <div id="home-view" class="view active">
+            <div class="card">
+                <div style="color:var(--muted); font-size:12px;">Available Balance</div>
+                <div class="balance" id="bal">UGX 3,000</div>
+                <div style="display:flex; justify-content:space-around; font-size:11px; color:var(--muted);">
+                    <div>Deposits: <strong id="depCount" style="color:white">0</strong></div>
+                    <div>Earnings: <strong id="earnCount" style="color:white">3,000</strong></div>
+                    <div>Withdrawals: <strong id="withCount" style="color:white">0</strong></div>
+                </div>
+            </div>
+
+            <div class="grid">
+                <button class="btn" onclick="openDepositModal()">➕ Deposit / Invest</button>
+                <button class="btn" onclick="openModal('Re-invest Balance')">🔄 Re-invest</button>
+                <button class="btn" onclick="openWithdrawModal()">💸 Withdraw</button>
+                <button class="btn" onclick="switchTab('myproducts')">📦 My Products</button>
+                <button class="btn" onclick="triggerCheckIn()">📅 Check-in</button>
+                <button class="btn" onclick="switchTab('referearn')">👥 Refer & Earn</button>
+            </div>
+
+            <div class="card" style="text-align: left;">
+                <div style="font-weight:bold; font-size:13px; margin-bottom:5px;">Your Unique Referral Link</div>
+                <div style="font-size:11px; color:var(--muted); margin-bottom:10px;">Invite friends & earn multi-tier commissions</div>
+                <div style="display:flex; gap:6px;">
+                    <input type="text" id="refLink" class="input" style="margin:0; font-size:11px;" value="" readonly>
+                    <button class="btn" style="padding:0 12px; background:#334155;" onclick="copyRef()">Copy</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- PRODUCTS VIEW -->
+        <div id="products-view" class="view">
+            <div class="card" style="text-align: left;">
+                <div style="color:var(--primary); font-weight:bold; font-size:15px; margin-bottom:4px;">INVESTMENT OPPORTUNITIES</div>
+                <div style="font-size:11px; color:var(--muted); margin-bottom:12px;">Earn 10% daily automated payouts for 180 days.</div>
+
+                <div class="plan-row"><div class="plan-info"><div>15,000 /=</div><div>Daily (10%): +1,500 /= | Total: 270,000 /=</div></div><button class="btn" style="padding:8px 12px; background:var::success;" onclick="investPlan(15000, 1500)">Invest</button></div>
+                <div class="plan-row"><div class="plan-info"><div>30,000 /=</div><div>Daily (10%): +3,000 /= | Total: 540,000 /=</div></div><button class="btn" style="padding:8px 12px; background:var(--success);" onclick="investPlan(30000, 3000)">Invest</button></div>
+                <div class="plan-row"><div class="plan-info"><div>50,000 /=</div><div>Daily (10%): +5,000 /= | Total: 900,000 /=</div></div><button class="btn" style="padding:8px 12px; background:var(--success);" onclick="investPlan(50000, 5000)">Invest</button></div>
+                <div class="plan-row"><div class="plan-info"><div>100,000 /=</div><div>Daily (10%): +10,000 /= | Total: 1,800,000 /=</div></div><button class="btn" style="padding:8px 12px; background:var(--success);" onclick="investPlan(100000, 10000)">Invest</button></div>
+                <div class="plan-row"><div class="plan-info"><div>300,000 /=</div><div>Daily (10%): +30,000 /= | Total: 5,400,000 /=</div></div><button class="btn" style="padding:8px 12px; background:var(--success);" onclick="investPlan(300000, 30000)">Invest</button></div>
+                <div class="plan-row"><div class="plan-info"><div>500,000 /=</div><div>Daily (10%): +50,000 /= | Total: 9,000,000 /=</div></div><button class="btn" style="padding:8px 12px; background:var(--success);" onclick="investPlan(500000, 50000)">Invest</button></div>
+                <div class="plan-row"><div class="plan-info"><div>1,000,000 /=</div><div>Daily (10%): +100,000 /= | Total: 18,000,000 /=</div></div><button class="btn" style="padding:8px 12px; background:var(--success);" onclick="investPlan(1000000, 100000)">Invest</button></div>
+            </div>
+        </div>
+
+        <!-- REFER & EARN VIEW -->
+        <div id="referearn-view" class="view">
+            <div class="card" style="text-align: left;">
+                <div style="color:var(--primary); font-weight:bold; font-size:15px; margin-bottom:8px;">👥 Refer & Earn Program</div>
+                <div style="font-size:12px; color:var(--muted); line-height:1.5;">
+                    Earn multi-tier commissions automatically when your team members purchase their first packages:
+                    <ul style="margin-left:18px; margin-top:8px;">
+                        <li><strong>Level 1 (Direct Invite):</strong> Get <strong>10%</strong> profits of their first package.</li>
+                        <li><strong>Level 2 (Invited by L1):</strong> Get <strong>5%</strong> credited automatically when they buy their first product.</li>
+                        <li><strong>Level 3 (Invited by L2):</strong> Get <strong>3%</strong> of their first purchased product.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- TRANSACTIONS VIEW -->
+        <div id="transactions-view" class="view">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <div style="color:var(--primary); font-weight:bold;">Transactions History</div>
+                    <div style="font-size:10px; color:var(--muted);">(Pending, Approved & Rejected)</div>
+                </div>
+                <div id="txLog" style="color:var(--muted); font-size:12px;"></div>
+            </div>
+        </div>
+
+        <!-- MY PRODUCTS VIEW -->
+        <div id="myproducts-view" class="view">
+            <div class="card" style="text-align:left;">
+                <div style="color:var(--primary); font-weight:bold; font-size:15px; margin-bottom:4px;">📦 My Purchased Products</div>
+                <div style="font-size:11px; color:var(--muted); margin-bottom:12px;">Automated daily 10% payouts every 24 hours (Cycle: 180 Days).</div>
+                <div id="myProductsList" style="color:var(--muted); font-size:12px;">No active investments yet. Purchase a plan from Products.</div>
+            </div>
+        </div>
+
+        <!-- PROFILE VIEW / SETTINGS / ADMIN PANEL -->
+        <div id="profile-view" class="view">
+            <div class="card">
+                <div class="profile-avatar-container" id="avatarPreviewContainer">
+                    <img id="profileAvatarImg" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'></path><circle cx='12' cy='7' r='4'></circle></svg>" alt="Avatar">
+                </div>
+                <div style="color:var(--primary); font-weight:bold; font-size:16px; margin-bottom:2px;" id="profileDisplayName">User Name</div>
+                <div style="font-size:11px; color:var(--muted); margin-bottom:15px;" id="profilePhoneDisplay">-</div>
+
+                <!-- PROFILE SETTINGS MENU -->
+                <div style="background:#0d1424; padding:15px; border-radius:8px; border:1px solid var(--border); margin-bottom:15px; text-align:left;">
+                    <div style="color:var(--primary); font-weight:bold; font-size:13px; margin-bottom:10px;">⚙️ Profile Settings</div>
+                    
+                    <label style="font-size:11px; color:var(--muted);">Profile Picture (Choose from storage)</label>
+                    <input type="file" id="avatarFileInput" class="input" accept="image/*" style="font-size:11px; padding:6px;" onchange="handleAvatarUpload(event)">
+
+                    <label style="font-size:11px; color:var(--muted); margin-top:8px; display:block;">Display Name</label>
+                    <input type="text" id="settingNameInput" class="input" placeholder="Enter profile name">
+
+                    <button class="btn" style="width:100%; margin-top:6px; background:#334155; font-size:11px;" onclick="saveProfileName()">Save Display Name</button>
+
+                    <div style="border-top:1px solid var(--border); margin:12px 0;"></div>
+
+                    <div style="color:var(--primary); font-weight:bold; font-size:12px; margin-bottom:6px;">Change Password</div>
+                    <label style="font-size:11px; color:var(--muted);">Current Password</label>
+                    <input type="password" id="oldPassInput" class="input" placeholder="Old password">
+
+                    <label style="font-size:11px; color:var(--muted);">New Alphanumeric Password</label>
+                    <input type="password" id="newPassInput" class="input" placeholder="New password">
+
+                    <button class="btn" style="width:100%; margin-top:6px; background:#334155; font-size:11px;" onclick="changePassword()">Update Password</button>
+                </div>
+
+                <button class="btn" style="width:100%; background:var(--danger);" onclick="triggerLogout()">Logout</button>
+            </div>
+
+            <!-- ADMIN CONTROL PANEL (Only visible for 0759537511) -->
+            <div id="admin-panel" style="display:none;">
+                <div class="card" style="text-align:left; border: 1px dashed var(--warning);">
+                    <div style="color:var(--warning); font-weight:bold; font-size:15px; margin-bottom:10px;">👑 Admin Control Panel</div>
+                    
+                    <!-- Admin Social Links Updater -->
+                    <div style="background:#0d1424; padding:12px; border-radius:8px; border:1px solid var(--border); margin-bottom:15px;">
+                        <div style="font-size:12px; font-weight:bold; color:var(--primary); margin-bottom:6px;">📱 Update Social Link URLs</div>
+                        
+                        <label style="font-size:10px; color:var(--muted);">WhatsApp Group Link</label>
+                        <input type="text" id="adminWhatsappInput" class="input" style="font-size:11px; margin:4px 0 8px 0;" placeholder="https://chat.whatsapp.com/...">
+
+                        <label style="font-size:10px; color:var(--muted);">Telegram Link</label>
+                        <input type="text" id="adminTelegramInput" class="input" style="font-size:11px; margin:4px 0 8px 0;" placeholder="https://t.me/...">
+
+                        <button class="btn" style="width:100%; font-size:11px; background:#334155;" onclick="saveAdminSocialLinks()">Save Links</button>
+                    </div>
+
+                     <div style="font-size:13px; font-weight:bold; color:white; margin-bottom:6px;">Pending Deposits</div>
+                    <div id="adminPendingDeposits" style="margin-bottom:15px; font-size:12px; color:var(--muted);">No pending deposits.</div>
+
+                    <div style="font-size:13px; font-weight:bold; color:white; margin-bottom:6px;">Pending Withdrawals</div>
+                    <div id="adminPendingWithdrawals" style="font-size:12px; color:var(--muted);">No pending withdrawals.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- UNIVERSAL MODAL -->
+        <div class="modal" id="modal">
+            <div class="modal-content" id="modal-body-content"></div>
+        </div>
+
+        <!-- FLOATING HELP & TELEGRAM BUTTONS -->
+        <div class="floating-container">
+            <a id="floatTelegramBtn" href="https://t.me/+s63xqIYPEdo5ZGI0" target="_blank" class="float-btn telegram-float">
+                ✈️ Telegram
+            </a>
+            <a id="floatWhatsappBtn" href="https://chat.whatsapp.com/J8WonMtmqgW6ljsV5fI3l5?s=cl&p=a&mlu=4&ilr=4" target="_blank" class="float-btn whatsapp-float">
+                💬 Help
+            </a>
+        </div>
+
+        <!-- BOTTOM NAVIGATION BAR -->
+        <nav class="nav">
+            <button class="nav-item active" id="nav-home" onclick="switchTab('home')">🏠<br>Home</button>
+            <button class="nav-item" id="nav-products" onclick="switchTab('products')">📦<br>Products</button>
+            <button class="nav-item" id="nav-referearn" onclick="switchTab('referearn')">👥<br>Refer & Earn</button>
+            <button class="nav-item" id="nav-transactions" onclick="switchTab('transactions')">📋<br>Transactions</button>
+            <button class="nav-item" id="nav-myproducts" onclick="switchTab('myproducts')">⭐<br>My Products</button>
+            <button class="nav-item" id="nav-profile" onclick="switchTab('profile')">👤<br>Profile</button>
+        </nav>
+    </div>
+
+    <script>
+        // Multi-user database mock simulation mapping user phone/email to state including permanent product record storage
+        let usersDB = {};
+        let currentUserPhone = '';
+        let registeredUserStore = null;
+        let txs = [];
+        
+        // Global Social Links Storage
+        let appConfig = {
+            whatsapp: "https://chat.whatsapp.com/J8WonMtmqgW6ljsV5fI3l5?s=cl&p=a&mlu=4&ilr=4",
+            telegram: "https://t.me/+s63xqIYPEdo5ZGI0"
+        };
+
+        function getCurrentUserData() {
+            if(!usersDB[currentUserPhone]) {
+                usersDB[currentUserPhone] = {
+                    balance: 3000,
+                    totalDep: 0,
+                    totalWith: 0,
+                    totalEarn: 3000,
+                    userProducts: [], // Retains user purchased products securely
+                    displayName: 'User Name',
+                    avatarUrl: ''
+                };
+            }
+            return usersDB[currentUserPhone];
+        }
+
+        function switchAuthTab(tab) {
+            document.getElementById('register-form').classList.remove('active');
+            document.getElementById('login-form').classList.remove('active');
+            document.getElementById('tab-reg-btn').classList.remove('active');
+            document.getElementById('tab-log-btn').classList.remove('active');
+
+            if(tab === 'register') {
+                document.getElementById('register-form').classList.add('active');
+                document.getElementById('tab-reg-btn').classList.add('active');
+            } else {
+                document.getElementById('login-form').classList.add('active');
+                document.getElementById('tab-log-btn').classList.add('active');
+            }
+        }
+
+        function validateUserIdentifier(inputVal) {
+            const isEmail = inputVal.includes('@') && inputVal.includes('.');
+            const isPhone = /^07\d{8}$/.test(inputVal);
+            return isEmail || isPhone;
+        }
+
+        function handleRegister() {
+            let user = document.getElementById('reg-user').value.trim();
+            let pass = document.getElementById('reg-pass').value.trim();
+            let passConfirm = document.getElementById('reg-pass-confirm').value.trim();
+
+            if(!validateUserIdentifier(user)) {
+                alert('Invalid input! Please enter a valid email or a 10-digit phone number starting with 07.');
+                return;
+            }
+
+            if(!pass || !/^[a-zA-Z0-9]+$/.test(pass)) {
+                alert('Password must be alphanumeric.');
+                return;
+            }
+
+            if(pass !== passConfirm) {
+                alert('Passwords do not match!');
+                return;
+            }
+
+            registeredUserStore = { user, pass };
+            currentUserPhone = user;
+            
+            if(!usersDB[currentUserPhone]) {
+                usersDB[currentUserPhone] = {
+                    balance: 3000,
+                    totalDep: 0,
+                    totalWith: 0,
+                    totalEarn: 3000,
+                    userProducts: [],
+                    displayName: user,
+                    avatarUrl: ''
+                };
+                txs.unshift({type: 'Welcome Bonus', amount: 3000, status: 'Approved', phone: user});
+            }
+
+            syncProfileUI();
+            document.getElementById('refLink').value = `https://sr-investments.com/reg?code=${user}`;
+            alert('🎉 Registration successful! You have received a UGX 3,000 welcome bonus.');
+            launchApp();
+        }
+
+        function handleLogin() {
+            let user = document.getElementById('log-user').value.trim();
+            let pass = document.getElementById('log-pass').value.trim();
+
+            if(!registeredUserStore) {
+                if(!validateUserIdentifier(user) || pass.length === 0) {
+                    alert('Please register first or enter valid credentials.');
+                    return;
+                }
+                registeredUserStore = { user, pass };
+            } else {
+                if(user !== registeredUserStore.user || pass !== registeredUserStore.pass) {
+                    alert('Incorrect phone/email or password!');
+                    return;
+                }
+            }
+            currentUserPhone = user;
+
+            if(!usersDB[currentUserPhone]) {
+                usersDB[currentUserPhone] = {
+                    balance: 3000,
+                    totalDep: 0,
+                    totalWith: 0,
+                    totalEarn: 3000,
+                    userProducts: [],
+                    displayName: user,
+                    avatarUrl: ''
+                };
+                txs.unshift({type: 'Welcome Bonus', amount: 3000, status: 'Approved', phone: user});
+            }
+
+            syncProfileUI();
+            document.getElementById('refLink').value = `https://sr-investments.com/reg?code=${user}`;
+            launchApp();
+        }
+
+        function syncProfileUI() {
+            let uData = getCurrentUserData();
+            document.getElementById('profilePhoneDisplay').innerText = currentUserPhone;
+            document.getElementById('profileDisplayName').innerText = uData.displayName;
+            document.getElementById('settingNameInput').value = uData.displayName;
+            
+            let avatarImg = document.getElementById('profileAvatarImg');
+            if(uData.avatarUrl) {
+                avatarImg.src = uData.avatarUrl;
+            } else {
+                avatarImg.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'></path><circle cx='12' cy='7' r='4'></circle></svg>";
+            }
+        }
+
+        function handleAvatarUpload(event) {
+            let file = event.target.files[0];
+            if(!file) return;
+
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                let uData = getCurrentUserData();
+                uData.avatarUrl = e.target.result;
+                syncProfileUI();
+                alert('Profile picture updated successfully!');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function saveProfileName() {
+            let newName = document.getElementById('settingNameInput').value.trim();
+            if(!newName) {
+                alert('Display name cannot be empty.');
+                return;
+            }
+            let uData = getCurrentUserData();
+            uData.displayName = newName;
+            syncProfileUI();
+            alert('Display name updated successfully!');
+        }
+
+        function changePassword() {
+            let oldPass = document.getElementById('oldPassInput').value.trim();
+            let newPass = document.getElementById('newPassInput').value.trim();
+
+            if(!oldPass || !newPass) {
+                alert('Please fill in both old and new passwords.');
+                return;
+            }
+            if(!/^[a-zA-Z0-9]+$/.test(newPass)) {
+                alert('New password must be alphanumeric.');
+                return;
+            }
+            if(registeredUserStore && oldPass !== registeredUserStore.pass) {
+                alert('Incorrect current password!');
+                return;
+            }
+
+            registeredUserStore.pass = newPass;
+            document.getElementById('oldPassInput').value = '';
+            document.getElementById('newPassInput').value = '';
+            alert('Password changed successfully!');
+        }
+
+        function saveAdminSocialLinks() {
+            let newWa = document.getElementById('adminWhatsappInput').value.trim();
+            let newTg = document.getElementById('adminTelegramInput').value.trim();
+
+            if(newWa) appConfig.whatsapp = newWa;
+            if(newTg) appConfig.telegram = newTg;
+
+            document.getElementById('floatWhatsappBtn').href = appConfig.whatsapp;
+            document.getElementById('floatTelegramBtn').href = appConfig.telegram;
+
+            alert('Social links updated successfully for all users!');
+        }
+
+        function launchApp() {
+            document.getElementById('auth-container').style.display = 'none';
+            document.getElementById('main-app').style.display = 'block';
+            updateDashboard();
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+        }
+
+        function openModal(title) {
+            document.getElementById('modal-body-content').innerHTML = `
+                <h3 style="color:var(--primary); font-size:14px; margin-bottom:10px;">${title}</h3>
+                <input type="number" id="amtInput" class="input" placeholder="Enter amount (UGX)">
+                <button class="btn" style="width:100%; background:var(--success); margin-top:5px;" onclick="submitGenericAction('${title}')">Confirm</button>
+                <button class="btn" style="width:100%; background:#334155; margin-top:8px;" onclick="closeModal()">Cancel</button>
+            `;
+            document.getElementById('modal').classList.add('active');
+        }
+
+        function openDepositModal() {
+            document.getElementById('modal-body-content').innerHTML = `
+                <h3 style="color:var(--primary); font-size:14px; margin-bottom:10px;">Deposit / Invest</h3>
+                <label style="font-size:11px; color:var(--muted);">Your Phone Number</label>
+                <input type="text" id="dep-phone" class="input" placeholder="07XXXXXXXX" value="${currentUserPhone.startsWith('07') ? currentUserPhone : ''}">
+                <label style="font-size:11px; color:var(--muted);">Amount (Min UGX 15,000)</label>
+                <input type="number" id="dep-amt" class="input" placeholder="Enter amount (UGX)">
+                <button class="btn" style="width:100%; background:var(--success); margin-top:5px;" onclick="processDepositStep1()">Confirm</button>
+                <button class="btn" style="width:100%; background:#334155; margin-top:8px;" onclick="closeModal()">Cancel</button>
+            `;
+            document.getElementById('modal').classList.add('active');
+        }
+
+        function processDepositStep1() {
+            let phone = document.getElementById('dep-phone').value.trim();
+            let amt = parseFloat(document.getElementById('dep-amt').value);
+
+            if(!/^07\d{8}$/.test(phone)) {
+                alert('Please enter a valid phone number starting with 07 (10 digits).');
+                return;
+            }
+            if(isNaN(amt) || amt < 15000) {
+                alert('Minimum deposit amount is UGX 15,000.');
+                return;
+            }
+
+            document.getElementById('modal-body-content').innerHTML = `
+                <h3 style="color:var(--primary); font-size:14px; margin-bottom:6px;">Complete Payment</h3>
+                <p style="font-size:11px; color:var(--muted); margin-bottom:10px;">Send <strong>UGX ${amt.toLocaleString()}</strong> to the merchant details below:</p>
+                
+                <div style="background:#0d1424; padding:10px; border-radius:8px; border:1px solid var(--border); margin-bottom:10px;">
+                    <div style="font-size:11px; color:var(--muted);">Name: <strong style="color:white">TOPISTA ANGOMOKO</strong></div>
+                    <div style="font-size:11px; color:var(--muted); margin-top:3px;">Phone Number:</div>
+                    <div style="display:flex; gap:6px; margin-top:3px;">
+                        <input type="text" id="targetNum" class="input" style="margin:0; font-size:12px;" value="0760434771" readonly>
+                        <button class="btn" style="padding:0 10px; background:#334155; font-size:11px;" onclick="copyTargetNum()">Copy</button>
+                    </div>
+                </div>
+
+                <label style="font-size:11px; color:var(--muted);">Phone Number You Used to Send Money</label>
+                <input type="text" id="sent-phone" class="input" placeholder="07XXXXXXXX" value="${phone}">
+
+                <label style="font-size:11px; color:var(--muted);">Amount You Sent (UGX)</label>
+                <input type="number" id="sent-amt" class="input" value="${amt}">
+
+                <button class="btn" style="width:100%; background:var(--success); margin-top:5px;" onclick="finalizeDeposit()">Confirm Deposit</button>
+                <button class="btn" style="width:100%; background:#334155; margin-top:8px;" onclick="closeModal()">Close</button>
+            `;
+        }
+
+        function copyTargetNum() {
+            navigator.clipboard.writeText("0760434771");
+            alert("Payment number copied to clipboard!");
+        }
+
+        function finalizeDeposit() {
+            let sentPhone = document.getElementById('sent-phone').value.trim();
+            let sentAmt = parseFloat(document.getElementById('sent-amt').value);
+
+            if(!/^07\d{8}$/.test(sentPhone)) {
+                alert('Please enter a valid phone number used for sending.');
+                return;
+            }
+            if(isNaN(sentAmt) || sentAmt <= 0) {
+                alert('Please enter a valid amount.');
+                return;
+            }
+
+            txs.unshift({
+                type: 'Deposit',
+                amount: sentAmt,
+                phone: sentPhone,
+                status: 'Pending'
+            });
+
+            updateDashboard();
+            closeModal();
+            alert('Deposit submitted. Kindly wait for Admin approval.');
+        }
+
+        function openWithdrawModal() {
+            document.getElementById('modal-body-content').innerHTML = `
+                <h3 style="color:var(--primary); font-size:14px; margin-bottom:10px;">Withdraw Funds</h3>
+                <label style="font-size:11px; color:var(--muted);">Full Name</label>
+                <input type="text" id="w-name" class="input" placeholder="Full Name">
+
+                <label style="font-size:11px; color:var(--muted);">Phone Number</label>
+                <input type="text" id="w-phone" class="input" placeholder="07XXXXXXXX" value="${currentUserPhone.startsWith('07') ? currentUserPhone : ''}">
+
+                <label style="font-size:11px; color:var(--muted);">Network Provider</label>
+                <select id="w-network" class="input">
+                    <option value="MTN MoMo">MTN MoMo</option>
+                    <option value="Airtel Money">Airtel Money</option>
+                </select>
+
+                <label style="font-size:11px; color:var(--muted);">Amount (Min UGX 5,000)</label>
+                <input type="number" id="w-amt" class="input" placeholder="Enter amount (UGX)" oninput="calcWithdrawCharge()">
+
+                <div style="background:#0d1424; padding:8px; border-radius:6px; margin:8px 0; font-size:11px; color:var(--muted);">
+                    Withdrawal Charge (10%): <strong id="chargeText" style="color:var(--primary)">UGX 0</strong><br>
+                    Total Deducted from Balance: <strong id="totalDedText" style="color:white">UGX 0</strong><br>
+                    Exact Amount to Receive: <strong id="exactReceiveText" style="color:var(--success)">UGX 0</strong>
+                </div>
+
+                <button class="btn" style="width:100%; background:var(--success); margin-top:5px;" onclick="submitWithdraw()">Confirm Withdrawal</button>
+                <button class="btn" style="width:100%; background:#334155; margin-top:8px;" onclick="closeModal()">Cancel</button>
+            `;
+            document.getElementById('modal').classList.add('active');
+        }
+
+        function calcWithdrawCharge() {
+            let val = parseFloat(document.getElementById('w-amt').value) || 0;
+            let charge = val * 0.10;
+            let totalDeduction = val + charge;
+            let exactReceive = val;
+            document.getElementById('chargeText').innerText = 'UGX ' + Math.floor(charge).toLocaleString();
+            document.getElementById('totalDedText').innerText = 'UGX ' + Math.floor(totalDeduction).toLocaleString();
+            document.getElementById('exactReceiveText').innerText = 'UGX ' + Math.floor(exactReceive).toLocaleString();
+        }
+        function submitWithdraw() {
+            let name = document.getElementById('w-name').value.trim();
+            let phone = document.getElementById('w-phone').value.trim();
+            let network = document.getElementById('w-network').value;
+            let val = parseFloat(document.getElementById('w-amt').value);
+
+            if(!name) { alert('Please enter full name.'); return; }
+            if(!/^07\d{8}$/.test(phone)) { alert('Please enter a valid phone number starting with 07.'); return; }
+            if(isNaN(val) || val < 5000) { alert('Minimum withdrawal amount is UGX 5,000.'); return; }
+
+            let charge = val * 0.10;
+            let totalDeduction = val + charge;
+            let uData = getCurrentUserData();
+
+            if(totalDeduction > uData.balance) {
+                alert('Insufficient balance including the 10% withdrawal charge!');
+                return;
+            }
+
+            uData.balance -= totalDeduction;
+            uData.totalWith += val;
+            txs.unshift({
+                type: 'Withdrawal',
+                amount: val,
+                phone: phone,
+                name: name,
+                network: network,
+                charge: charge,
+                sendAmount: val,
+                status: 'Pending'
+            });
+            updateDashboard();
+            closeModal();
+            alert(`🎉 Withdrawal request submitted successfully (Pending Admin Approval).`);
+        }
+
+        function submitGenericAction(title) {
+            let val = parseFloat(document.getElementById('amtInput').value);
+            if(isNaN(val) || val <= 0) { alert('Please enter a valid amount.'); return; }
+
+            let uData = getCurrentUserData();
+            uData.balance += val;
+            uData.totalDep += val;
+            txs.unshift({type: title, amount: val, phone: currentUserPhone, status: 'Approved'});
+            updateDashboard();
+            closeModal();
+            alert('Action completed successfully!');
+        }
+
+        function investPlan(price, dailyReturn) {
+            let uData = getCurrentUserData();
+            if(uData.balance < price) {
+                if(confirm('Insufficient balance to invest directly. Would you like to deposit funds first? (Minimum deposit is UGX 15,000)')) {
+                    openDepositModal();
+                }
+                return;
+            }
+            uData.balance -= price;
+            
+            // Permanently saved to the active user's persistent product record array
+            uData.userProducts.push({
+                price: price,
+                dailyReturn: dailyReturn,
+                totalIncome: dailyReturn * 180,
+                currentDay: 1,
+                maxDays: 180,
+                createdAt: Date.now(),
+                nextPayoutTime: Date.now() + 86400000
+            });
+
+            txs.unshift({type: `Investment Plan (${price.toLocaleString()} /=)`, amount: price, phone: currentUserPhone, status: 'Approved'});
+            updateDashboard();
+            switchTab('myproducts');
+            alert(`🎉 Successfully invested UGX ${price.toLocaleString()}! Daily 10% Return: UGX ${dailyReturn.toLocaleString()}`);
+        }
+
+        function triggerCheckIn() {
+            let uData = getCurrentUserData();
+            uData.balance += 500;
+            uData.totalEarn += 500;
+            txs.unshift({type: 'Daily Check-in Bonus', amount: 500, phone: currentUserPhone, status: 'Approved'});
+            updateDashboard();
+            alert('🎉 Check-in successful! You earned UGX 500.');
+        }
+
+        function triggerLogout() {
+            if(confirm('Are you sure you want to log out?')) {
+                document.getElementById('main-app').style.display = 'none';
+                document.getElementById('auth-container').style.display = 'flex';
+                document.getElementById('log-user').value = '';
+                document.getElementById('log-pass').value = '';
+            }
+        }
+
+        function updateDashboard() {
+            let uData = getCurrentUserData();
+            document.getElementById('bal').innerText = 'UGX ' + Math.floor(uData.balance).toLocaleString();
+            document.getElementById('depCount').innerText = uData.totalDep.toLocaleString();
+            document.getElementById('earnCount').innerText = uData.totalEarn.toLocaleString();
+            document.getElementById('withCount').innerText = uData.totalWith.toLocaleString();
+            updateLog();
+            renderMyProducts();
+            checkAdminPanel();
+        }
+
+        function checkAdminPanel() {
+            let adminPanel = document.getElementById('admin-panel');
+            if(currentUserPhone === '0759537511') {
+                adminPanel.style.display = 'block';
+                renderAdminControlLists();
+                
+                // Set current values in admin inputs
+                document.getElementById('adminWhatsappInput').value = appConfig.whatsapp;
+                document.getElementById('adminTelegramInput').value = appConfig.telegram;
+            } else {
+                adminPanel.style.display = 'none';
+            }
+        }
+
+        function renderAdminControlLists() {
+            let pendingDeps = txs.filter(t => t.type === 'Deposit' && t.status === 'Pending');
+            let pendingWiths = txs.filter(t => t.type === 'Withdrawal' && t.status === 'Pending');
+
+            let depHtml = '';
+            if(pendingDeps.length === 0) {
+                depHtml = 'No pending deposits.';
+            } else {
+                pendingDeps.forEach((t) => {
+                    let realIdx = txs.indexOf(t);
+                    depHtml += `
+                    <div style="background:#0d1424; padding:8px; border-radius:6px; margin-top:4px; display:flex; justify-content:space-between; align-items:center;">
+                        <div>Phone: <strong style="color:white">${t.phone}</strong> | Amt: <strong style="color:var(--success)">UGX ${t.amount.toLocaleString()}</strong></div>
+                        <div style="display:flex; gap:4px;">
+                            <button class="btn" style="padding:4px 8px; font-size:10px; background:var(--success);" onclick="approveTx(${realIdx})">Approve</button>
+                            <button class="btn" style="padding:4px 8px; font-size:10px; background:var(--danger);" onclick="rejectTx(${realIdx})">Reject</button>
+                        </div>
+                    </div>`;
+                });
+            }
+            document.getElementById('adminPendingDeposits').innerHTML = depHtml;
+
+            let withHtml = '';
+            if(pendingWiths.length === 0) {
+                withHtml = 'No pending withdrawals.';
+            } else {
+                pendingWiths.forEach((t) => {
+                    let realIdx = txs.indexOf(t);
+                    let exactToSend = t.sendAmount || t.amount;
+                    withHtml += `
+                    <div style="background:#0d1424; padding:8px; border-radius:6px; margin-top:4px; display:flex; justify-content:space-between; align-items:center;">
+                        <div>Name: <strong style="color:white">${t.name}</strong><br>Network: ${t.network} | Phone: ${t.phone}<br>Send Amount: <strong style="color:var(--success)">UGX ${exactToSend.toLocaleString()}</strong></div>
+                        <div style="display:flex; gap:4px;">
+                            <button class="btn" style="padding:4px 8px; font-size:10px; background:var(--success);" onclick="approveTx(${realIdx})">Approve</button>
+                            <button class="btn" style="padding:4px 8px; font-size:10px; background:var(--danger);" onclick="rejectTx(${realIdx})">Reject</button>
+                        </div>
+                    </div>`;
+                });
+            }
+            document.getElementById('adminPendingWithdrawals').innerHTML = withHtml;
+        }
+
+        function approveTx(index) {
+            let t = txs[index];
+            if(t.status === 'Pending') {
+                t.status = 'Approved';
+                
+                let targetUser = t.phone;
+                if(!usersDB[targetUser]) {
+                    usersDB[targetUser] = {
+                        balance: 3000,
+                        totalDep: 0,
+                        totalWith: 0,
+                        totalEarn: 3000,
+                        userProducts: [],
+                        displayName: targetUser,
+                        avatarUrl: ''
+                    };
+                }
+                let targetUserData = usersDB[targetUser];
+
+                if(t.type === 'Deposit') {
+                    targetUserData.totalDep += t.amount;
+                    targetUserData.balance += t.amount;
+                    
+                    let l1Bonus = t.amount * 0.10;
+                    targetUserData.totalEarn += l1Bonus;
+                    targetUserData.balance += l1Bonus;
+                }
+            }
+            updateDashboard();
+            alert('Transaction approved successfully for user account!');
+        }
+
+        function rejectTx(index) {
+            let t = txs[index];
+            if(t.status === 'Pending') {
+                t.status = 'Rejected';
+                
+                if(t.type === 'Withdrawal') {
+                    let targetUser = t.phone;
+                    if(usersDB[targetUser]) {
+                        let totalDeduction = t.amount + (t.charge || (t.amount * 0.10));
+                        usersDB[targetUser].balance += totalDeduction;
+                        usersDB[targetUser].totalWith -= t.amount;
+                    }
+                }
+            }
+            updateDashboard();
+            alert('Transaction has been rejected.');
+        }
+        function updateLog() {
+            let logHtml = '';
+            if(txs.length === 0) {
+                document.getElementById('txLog').innerHTML = 'No transactions yet.';
+                return;
+            }
+            txs.forEach((t) => {
+                let badgeColor = 'var(--muted)';
+                if(t.status === 'Approved') badgeColor = 'var(--success)';
+                if(t.status === 'Pending') badgeColor = 'var(--warning)';
+                if(t.status === 'Rejected') badgeColor = 'var(--danger)';
+
+                let sign = t.type.includes('Withdraw') ? '-' : '+';
+                let phoneDisplay = t.phone && t.phone !== 'System' ? `<br><span style="font-size:10px; color:var(--muted)">Phone: ${t.phone}</span>` : '';
+
+                logHtml += `
+                <div style="display:flex; justify-content:space-between; align-items:center; background:#0d1424; padding:10px; margin-top:6px; border-radius:6px; border: 1px solid var(--border);">
+                    <div>
+                        <strong style="color:white">${t.type}</strong>${phoneDisplay}
+                        <div style="font-size:10px; margin-top:2px;">Status: <span style="color:${badgeColor}; font-weight:bold;">${t.status}</span></div>
+                    </div>
+                    <div style="text-align:right;">
+                        <strong style="color:${t.type.includes('Withdraw') ? '#f472b6' : '#34d399'}">${sign}${t.amount.toLocaleString()}</strong>
+                    </div>
+                </div>`;
+            });
+            document.getElementById('txLog').innerHTML = logHtml;
+        }
+
+        function copyRef() {
+            navigator.clipboard.writeText(document.getElementById("refLink").value);
+            alert("Copied unique referral link!");
+        }
+
+        function switchTab(tab) {
+            ['home', 'products', 'referearn', 'transactions', 'myproducts', 'profile'].forEach(t => {
+                let viewEl = document.getElementById(t + '-view');
+                let navEl = document.getElementById('nav-' + t);
+                if(viewEl) viewEl.classList.remove('active');
+                if(navEl) navEl.classList.remove('active');
+            });
+            let targetView = document.getElementById(tab + '-view');
+            let targetNav = document.getElementById('nav-' + tab);
+            if(targetView) targetView.classList.add('active');
+            if(targetNav) targetNav.classList.add('active');
+            window.scrollTo(0,0);
+        }
+
+        function renderMyProducts() {
+            let container = document.getElementById('myProductsList');
+            if(!container) return;
+            let uData = getCurrentUserData();
+            if(uData.userProducts.length === 0) {
+                container.innerHTML = 'No active investments yet. Purchase a plan from Products.';
+                return;
+            }
+            let html = '';
+            let now = Date.now();
+            uData.userProducts.forEach((p) => {
+                let timeLeft = Math.max(0, p.nextPayoutTime - now);
+                let hours = Math.floor(timeLeft / 3600000);
+                let minutes = Math.floor((timeLeft % 3600000) / 60000);
+                let seconds = Math.floor((timeLeft % 60000) / 1000);
+
+                html += `
+                <div style="background:#0d1424; padding:12px; border-radius:8px; border:1px solid var(--border); margin-bottom:10px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                        <strong style="color:white">Plan: UGX ${p.price.toLocaleString()}</strong>
+                        <span style="color:var(--success); font-weight:bold;">Day ${p.currentDay} / ${p.maxDays}</span>
+                    </div>
+                    <div style="font-size:11px; color:var(--muted); margin-bottom:4px;">
+                        Daily Payout (10%): <strong style="color:white">UGX ${p.dailyReturn.toLocaleString()}</strong> | Total Income: <strong style="color:var(--primary)">UGX ${p.totalIncome.toLocaleString()}</strong>
+                    </div>
+                    <div style="font-size:11px; color:var(--warning);">
+                        Next Automated Payout in: <strong>${hours}h ${minutes}m ${seconds}s</strong>
+                    </div>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        setInterval(() => {
+            let now = Date.now();
+            let updated = false;
+            for(let uKey in usersDB) {
+                let uData = usersDB[uKey];
+                uData.userProducts.forEach(p => {
+                    if(now >= p.nextPayoutTime && p.currentDay <= p.maxDays) {
+                        uData.balance += p.dailyReturn;
+                        uData.totalEarn += p.dailyReturn;
+                        uData.totalEarn = Math.floor(uData.totalEarn);
+                        uData.balance = Math.floor(uData.balance);
+                        p.currentDay++;
+                        p.nextPayoutTime = now + 86400000;
+                        txs.unshift({type: `Daily Payout (Day ${p.currentDay-1})`, amount: p.dailyReturn, phone: uKey, status: 'Approved'});
+                        updated = true;
+                    }
+                });
+            }
+            if(updated) {
+                updateDashboard();
+            } else {
+                renderMyProducts();
+            }
+        }, 1000);
+
+        /* Waving Text Animation Script with Dynamic Colors */
+        const canvas = document.getElementById('wave-canvas');
+        const ctx = canvas.getContext('2d');
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight * 0.45;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        let angle = 0;
+        const textString = "SR.INVESTMENTS   •   SR.INVESTMENTS   •   ";
+        const colors = ['#10b981', '#3b82f6', '#d81b60', '#ffffff', '#000000', '#fbbf24', '#a855f7'];
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            angle += 0.03;
+
+            ctx.font = 'bold 16px sans-serif';
+            ctx.textBaseline = 'middle';
+
+            for (let r = 0; r < 5; r++) {
+                ctx.save();
+                let yOffset = canvas.height - (5 - r) * 35 + Math.sin(angle + r) * 10;
+                
+                let colorIndex = Math.floor((angle + r) * 0.5) % colors.length;
+                if(colorIndex < 0) colorIndex += colors.length;
+                ctx.fillStyle = colors[colorIndex];
+                ctx.globalAlpha = 0.3 + (r * 0.15);
+
+                let xOffset = (angle * 30 + r * 50) % 300 - 300;
+                ctx.fillText(textString.repeat(3), xOffset, yOffset);
+                ctx.restore();
+            }
+
+            requestAnimationFrame(draw);
+        }
+        draw();
+    </script>
+</body>
+</html> 
